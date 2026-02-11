@@ -1,0 +1,277 @@
+// schema.prisma
+// Full domain model — designed in Phase 5: Domain & Data Design
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  BRANCH_MANAGER
+  MERCHANT
+  COURIER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ShipmentStatus {
+  PENDING
+  READY_FOR_PICKUP
+  ASSIGNED_TO_COURIER
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED_ATTEMPT
+  RETURN_IN_PROGRESS
+  RETURNED
+  CANCELLED
+}
+
+enum CODRecordStatus {
+  COLLECTED
+  SETTLED
+}
+
+enum CODSettlementStatus {
+  PENDING
+  PAID
+}
+
+// ─────────────────────────────────────────
+// TENANT
+// ─────────────────────────────────────────
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(PENDING)
+  settings  Json         @default("{}")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relations
+  users          User[]
+  branches       Branch[]
+  shipments      Shipment[]
+  pricingRules   PricingRule[]
+  codSettlements CODSettlement[]
+
+  @@map("tenants")
+}
+
+// ─────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────
+
+model User {
+  id           String     @id @default(uuid())
+  tenantId     String?
+  branchId     String?
+  role         UserRole
+  email        String     @unique
+  phone        String?
+  passwordHash String
+  name         String
+  status       UserStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  shipmentsAsMerchant  Shipment[]              @relation("MerchantShipments")
+  shipmentsAsCourier   Shipment[]              @relation("CourierShipments")
+  statusChanges        ShipmentStatusHistory[]
+  codRecordsAsCourier  CODRecord[]             @relation("CourierCODRecords")
+  codRecordsAsMerchant CODRecord[]             @relation("MerchantCODRecords")
+  settlementsConfirmed CODSettlement[]         @relation("ConfirmedSettlements")
+  merchantSettlements  CODSettlement[]         @relation("MerchantSettlements")
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// BRANCH
+// ─────────────────────────────────────────
+
+model Branch {
+  id        String       @id @default(uuid())
+  tenantId  String
+  name      String
+  city      String
+  address   String
+  status    BranchStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relations
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  users     User[]
+  shipments Shipment[]
+
+  @@map("branches")
+}
+
+// ─────────────────────────────────────────
+// SHIPMENT
+// ─────────────────────────────────────────
+
+model Shipment {
+  id             String         @id @default(uuid())
+  trackingNumber String         @unique
+  tenantId       String
+  branchId       String
+  merchantId     String
+  courierId      String?
+  status         ShipmentStatus @default(PENDING)
+
+  // Recipient
+  recipientName    String
+  recipientPhone   String
+  recipientAddress String
+  city             String
+
+  // Financials
+  weight    Decimal @db.Decimal(8, 2)
+  price     Decimal @db.Decimal(10, 2)
+  codAmount Decimal @default(0) @db.Decimal(10, 2)
+
+  // Delivery control
+  notes        String?
+  maxAttempts  Int     @default(3)
+  attemptCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  branch   Branch  @relation(fields: [branchId], references: [id])
+  merchant User    @relation("MerchantShipments", fields: [merchantId], references: [id])
+  courier  User?   @relation("CourierShipments", fields: [courierId], references: [id])
+
+  statusHistory ShipmentStatusHistory[]
+  codRecord     CODRecord?
+
+  @@map("shipments")
+}
+
+// ─────────────────────────────────────────
+// SHIPMENT STATUS HISTORY (Immutable)
+// ─────────────────────────────────────────
+
+model ShipmentStatusHistory {
+  id         String         @id @default(uuid())
+  shipmentId String
+  status     ShipmentStatus
+  changedBy  String
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  // Relations
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  user     User     @relation(fields: [changedBy], references: [id])
+
+  // No updatedAt — this record is immutable
+
+  @@map("shipment_status_history")
+}
+
+// ─────────────────────────────────────────
+// COD RECORD
+// ─────────────────────────────────────────
+
+model CODRecord {
+  id           String          @id @default(uuid())
+  shipmentId   String          @unique
+  tenantId     String
+  merchantId   String
+  courierId    String
+  amount       Decimal         @db.Decimal(10, 2)
+  collectedAt  DateTime
+  status       CODRecordStatus @default(COLLECTED)
+  settlementId String?
+
+  // Relations
+  shipment   Shipment       @relation(fields: [shipmentId], references: [id])
+  merchant   User           @relation("MerchantCODRecords", fields: [merchantId], references: [id])
+  courier    User           @relation("CourierCODRecords", fields: [courierId], references: [id])
+  settlement CODSettlement? @relation(fields: [settlementId], references: [id])
+
+  @@map("cod_records")
+}
+
+// ─────────────────────────────────────────
+// COD SETTLEMENT
+// ─────────────────────────────────────────
+
+model CODSettlement {
+  id          String              @id @default(uuid())
+  tenantId    String
+  merchantId  String
+  totalAmount Decimal             @db.Decimal(10, 2)
+  status      CODSettlementStatus @default(PENDING)
+  confirmedBy String?
+  confirmedAt DateTime?
+  note        String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  merchant   User        @relation("MerchantSettlements", fields: [merchantId], references: [id])
+  confirmer  User?       @relation("ConfirmedSettlements", fields: [confirmedBy], references: [id])
+  codRecords CODRecord[]
+
+  @@map("cod_settlements")
+}
+
+// ─────────────────────────────────────────
+// PRICING RULE
+// ─────────────────────────────────────────
+
+model PricingRule {
+  id         String   @id @default(uuid())
+  tenantId   String
+  merchantId String?
+  zone       String
+  weightFrom Decimal  @db.Decimal(8, 2)
+  weightTo   Decimal  @db.Decimal(8, 2)
+  basePrice  Decimal  @db.Decimal(10, 2)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  merchant User?  @relation(fields: [merchantId], references: [id])
+
+  @@map("pricing_rules")
+}
