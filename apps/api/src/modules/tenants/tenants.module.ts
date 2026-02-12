@@ -1,5 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TenantsService } from './tenants.service';
+import { TenantsController } from './tenants.controller';
 
-// TODO: Implement in next increment
-@Module({})
+@Module({
+  controllers: [TenantsController],
+  providers: [TenantsService],
+  exports: [TenantsService],
+})
 export class TenantsModule {}
+
