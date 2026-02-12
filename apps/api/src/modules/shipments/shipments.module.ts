@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
+import { ShipmentsService } from './shipments.service';
+import { ShipmentsController } from './shipments.controller';
+import { PricingModule } from '../pricing/pricing.module';
 
-// TODO: Implement in next increment
-@Module({})
+@Module({
+  imports: [PricingModule],
+  controllers: [ShipmentsController],
+  providers: [ShipmentsService],
+  exports: [ShipmentsService],
+})
 export class ShipmentsModule {}
+
