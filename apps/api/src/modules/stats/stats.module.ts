@@ -3,8 +3,8 @@ import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
 
 @Module({
-  controllers: [StatsController],
   providers: [StatsService],
+  controllers: [StatsController],
   exports: [StatsService],
 })
 export class StatsModule {}

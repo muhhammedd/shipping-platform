@@ -1,0 +1,91 @@
+// هذا الملف يجمع الثوابت والأنواع المستخدمة في المشروع
+import { z } from 'zod';
+
+export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  COMPANY_ADMIN = 'COMPANY_ADMIN',
+  BRANCH_MANAGER = 'BRANCH_MANAGER',
+  MERCHANT = 'MERCHANT',
+  COURIER = 'COURIER',
+}
+
+export enum ShipmentStatus {
+  PENDING = 'PENDING',
+  READY_FOR_PICKUP = 'READY_FOR_PICKUP',
+  ASSIGNED_TO_COURIER = 'ASSIGNED_TO_COURIER',
+  PICKED_UP = 'PICKED_UP',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  FAILED_ATTEMPT = 'FAILED_ATTEMPT',
+  RETURN_IN_PROGRESS = 'RETURN_IN_PROGRESS',
+  RETURNED = 'RETURNED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ErrorCode {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  SHIPMENT_ALREADY_ASSIGNED = 'SHIPMENT_ALREADY_ASSIGNED',
+  SHIPMENT_CANNOT_BE_CANCELLED = 'SHIPMENT_CANNOT_BE_CANCELLED',
+}
+
+// Zod Schemas
+export const CreateShipmentSchema = z.object({
+  recipientName: z.string().min(2),
+  recipientPhone: z.string().min(10),
+  recipientAddress: z.string().min(5),
+  city: z.string().min(2),
+  weight: z.number().positive(),
+  codAmount: z.number().min(0),
+  notes: z.string().optional(),
+});
+
+export const AssignCourierSchema = z.object({
+  courierId: z.string().uuid(),
+});
+
+export const UpdateShipmentStatusSchema = z.object({
+  status: z.nativeEnum(ShipmentStatus),
+  note: z.string().optional(),
+  codCollected: z.number().optional(),
+});
+
+export const GetShipmentsQuerySchema = z.object({
+  page: z.coerce.number().default(1),
+  limit: z.coerce.number().default(20),
+  status: z.nativeEnum(ShipmentStatus).optional(),
+  city: z.string().optional(),
+  merchantId: z.string().uuid().optional(),
+  courierId: z.string().uuid().optional(),
+  branchId: z.string().uuid().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+});
+
+// Types
+export type AuthUser = {
+  id: string;
+  email: string;
+  role: UserRole;
+  tenantId: string;
+  branchId?: string | null;
+};
+
+export type CreateShipmentDto = z.infer<typeof CreateShipmentSchema>;
+export type AssignCourierDto = z.infer<typeof AssignCourierSchema>;
+export type UpdateShipmentStatusDto = z.infer<typeof UpdateShipmentStatusSchema>;
+export type GetShipmentsQueryDto = z.infer<typeof GetShipmentsQuerySchema>;
+
+// State Machine Constants
+export const VALID_STATUS_TRANSITIONS: Record<ShipmentStatus, ShipmentStatus[]> = {
+  [ShipmentStatus.PENDING]: [ShipmentStatus.READY_FOR_PICKUP, ShipmentStatus.CANCELLED],
+  [ShipmentStatus.READY_FOR_PICKUP]: [ShipmentStatus.ASSIGNED_TO_COURIER, ShipmentStatus.CANCELLED],
+  [ShipmentStatus.ASSIGNED_TO_COURIER]: [ShipmentStatus.PICKED_UP],
+  [ShipmentStatus.PICKED_UP]: [ShipmentStatus.OUT_FOR_DELIVERY],
+  [ShipmentStatus.OUT_FOR_DELIVERY]: [ShipmentStatus.DELIVERED, ShipmentStatus.FAILED_ATTEMPT],
+  [ShipmentStatus.DELIVERED]: [], // Terminal
+  [ShipmentStatus.FAILED_ATTEMPT]: [ShipmentStatus.OUT_FOR_DELIVERY, ShipmentStatus.RETURN_IN_PROGRESS],
+  [ShipmentStatus.RETURN_IN_PROGRESS]: [ShipmentStatus.RETURNED],
+  [ShipmentStatus.RETURNED]: [], // Terminal
+  [ShipmentStatus.CANCELLED]: [], // Terminal
+};
+

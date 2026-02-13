@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
+import { CodService } from './cod.service';
+import { CodController } from './cod.controller';
 
-// TODO: Implement in next increment
-@Module({})
+@Module({
+  providers: [CodService],
+  controllers: [CodController],
+  exports: [CodService],
+})
 export class CodModule {}
