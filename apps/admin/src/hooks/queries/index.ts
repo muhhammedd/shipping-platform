@@ -219,6 +219,50 @@ export function useUpdateUserStatus() {
   });
 }
 
+export function useUpdatePassword() {
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await api.patch<ApiResponse<{ message: string }>>(
+        '/users/me/password',
+        data
+      );
+      return response.data;
+    },
+  });
+}
+
+// ─────────────────────────────────────────
+// Tenants Hooks
+// ─────────────────────────────────────────
+
+export function useTenant(id: string) {
+  return useQuery({
+    queryKey: ['tenant', id],
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<Tenant>>(endpoints.tenants.get(id));
+      return response.data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useUpdateTenant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await api.patch<ApiResponse<Tenant>>(
+        endpoints.tenants.update(id),
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', variables.id] });
+    },
+  });
+}
+
 // ─────────────────────────────────────────
 // Shipments Hooks
 // ─────────────────────────────────────────
