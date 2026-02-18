@@ -1,8 +1,18 @@
 'use client';
 
-import { useCompanyStats } from '@/hooks/queries';
+import { useCompanyStats, useShipments } from '@/hooks/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import {
   Package,
   Truck,
@@ -12,10 +22,21 @@ import {
   Store,
   Banknote,
   TrendingUp,
+  ArrowRight,
+  PlusCircle,
+  History,
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth.store';
+import { ROLE_LABELS, SHIPMENT_STATUS_LABELS } from '@/lib/constants';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { data: stats, isLoading, error } = useCompanyStats();
+  const { user } = useAuthStore();
+  const { data: stats, isLoading: statsLoading, error: statsError } = useCompanyStats();
+  const { data: recentShipmentsData, isLoading: shipmentsLoading } = useShipments({ page: 1, limit: 5 });
+
+  const isLoading = statsLoading || shipmentsLoading;
+  const error = statsError;
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -105,12 +126,17 @@ export default function DashboardPage() {
     },
   ];
 
+  const recentShipments = recentShipmentsData?.data || [];
+  const roleLabel = user?.role ? ROLE_LABELS[user.role]?.ar : '';
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-        <p className="text-muted-foreground">نظرة عامة على أداء الشركة</p>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold">
+          مرحباً {user?.name}، {roleLabel}
+        </h1>
+        <p className="text-muted-foreground">نظرة عامة على أداء الشركة اليوم</p>
       </div>
 
       {/* Stats Grid */}
@@ -155,6 +181,122 @@ export default function DashboardPage() {
             </Card>
           );
         })}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Shipments */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <History className="w-5 h-5 text-blue-600" />
+              آخر الشحنات
+            </CardTitle>
+            <Link href="/shipments">
+              <Button variant="ghost" size="sm" className="gap-1">
+                عرض الكل
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>رقم التتبع</TableHead>
+                  <TableHead>التاجر</TableHead>
+                  <TableHead>المدينة</TableHead>
+                  <TableHead>الحالة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentShipments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      لا توجد شحنات حديثة
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  recentShipments.map((shipment) => (
+                    <TableRow key={shipment.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell className="font-mono font-medium">
+                        <Link href={`/shipments/${shipment.id}`}>{shipment.trackingNumber}</Link>
+                      </TableCell>
+                      <TableCell>{shipment.merchant?.name || '-'}</TableCell>
+                      <TableCell>{shipment.city}</TableCell>
+                      <TableCell>
+                        <Badge className={`${SHIPMENT_STATUS_LABELS[shipment.status]?.color} text-white`}>
+                          {SHIPMENT_STATUS_LABELS[shipment.status]?.ar}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-blue-600" />
+            روابط سريعة
+          </h3>
+          <div className="grid gap-3">
+            <Link href="/shipments?status=PENDING">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                      <Package className="w-4 h-4 text-yellow-600" />
+                    </div>
+                    <span className="font-medium">الشحنات المعلقة</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/cod">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <Banknote className="w-4 h-4 text-green-600" />
+                    </div>
+                    <span className="font-medium">تسويات COD</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/merchants">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                      <Store className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <span className="font-medium">إضافة تاجر</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/couriers">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                      <Users className="w-4 h-4 text-teal-600" />
+                    </div>
+                    <span className="font-medium">إضافة مندوب</span>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
