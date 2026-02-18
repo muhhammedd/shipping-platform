@@ -15,6 +15,7 @@ import {
   Wallet,
   LogOut,
   Bell,
+  Settings,
 } from 'lucide-react';
 
 const bottomNavItems = [
@@ -22,6 +23,7 @@ const bottomNavItems = [
   { href: '/shipments/new', icon: PlusCircle, label: 'جديدة' },
   { href: '/shipments', icon: Package, label: 'الشحنات' },
   { href: '/cod/balance', icon: Wallet, label: 'المستحقات' },
+  { href: '/settings', icon: Settings, label: 'الإعدادات' },
 ];
 
 export default function MerchantDashboardLayout({

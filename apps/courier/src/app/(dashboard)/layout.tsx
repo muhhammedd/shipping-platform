@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -9,14 +9,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLogout } from '@/hooks/queries';
 import { Home, Wallet, LogOut, Menu, X, Truck } from 'lucide-react';
-import { useState } from 'react';
 
 const bottomNavItems = [
   { href: '/tasks', icon: Home, label: 'المهام' },
   { href: '/cod/summary', icon: Wallet, label: 'COD' },
 ];
 
-export default function CourierLayout({ children }: { children: React.ReactNode }) {
+export default function CourierDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuthStore();
