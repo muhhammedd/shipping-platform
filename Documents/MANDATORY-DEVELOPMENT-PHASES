@@ -1,0 +1,54 @@
+1. Discovery & Planning
+	•	Clarify the business problem
+	•	Define user roles and responsibilities
+	•	Identify core pain points
+	•	Define a strict MVP scope
+	•	Explicitly list what is out of scope
+⸻
+2. System Analysis
+	•	Define use cases per role
+	•	Describe user flows in text form
+	•	Identify critical workflows
+	•	Define business rules and constraints
+⸻
+3. Architecture Design
+	•	High-level system architecture
+	•	Frontend / Backend responsibilities
+	•	API communication strategy (HTTP vs Real-time)
+	•	Authentication & authorization model
+	•	Database modeling approach
+⸻
+4. Tech Stack Validation
+	•	Validate framework and tool versions
+	•	Prefer stable, well-documented releases
+	•	Recommend downgrades if stability is a concern
+	•	Justify every major technology choice
+⸻
+5. Domain & Data Design
+	•	Define core domain entities
+	•	Define relationships and ownership
+	•	Design order / shipment status lifecycle
+	•	Identify domain events and side effects
+⸻
+6. API Design
+	•	Design RESTful endpoints
+	•	Define DTOs and validation rules
+	•	Standardize error handling
+	•	Define security boundaries
+⸻
+7. Frontend Strategy
+	•	Define layout and navigation structure
+	•	Role-based access control
+	•	State management boundaries
+	•	UX flows for dashboards and forms
+⸻
+8. Incremental Implementation
+	•	Implement features incrementally
+	•	Complete and validate one feature before starting another
+	•	Review code quality and architecture continuously
+
+⸻
+9. Stability & Readiness
+•	Identify edge cases and failure scenarios
+	•	Define basic testing strategy
+	•	Ensure production readiness (logging, configs, security)

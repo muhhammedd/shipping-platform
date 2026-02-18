@@ -1,0 +1,49 @@
+{
+  "name": "shipping-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shipping & Logistics SaaS Platform - Complete Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:admin\" \"npm run dev:merchant\" \"npm run dev:courier\"",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "dev:merchant": "npm run dev --workspace=apps/merchant",
+    "dev:courier": "npm run dev --workspace=apps/courier",
+    "build": "turbo run build",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "build:merchant": "npm run build --workspace=apps/merchant",
+    "build:courier": "npm run build --workspace=apps/courier",
+    "start": "concurrently \"npm run start:api\" \"npm run start:admin\" \"npm run start:merchant\" \"npm run start:courier\"",
+    "start:api": "npm run start --workspace=apps/api",
+    "start:admin": "npm run start --workspace=apps/admin",
+    "start:merchant": "npm run start --workspace=apps/merchant",
+    "start:courier": "npm run start --workspace=apps/courier",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "db:generate": "npm run db:generate --workspace=apps/api",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:push": "npm run db:push --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:studio": "npm run db:studio --workspace=apps/api",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.next apps/*/dist apps/api/dist",
+    "install:all": "npm install && npm run db:generate"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}

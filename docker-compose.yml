@@ -1,0 +1,133 @@
+# ─────────────────────────────────────────
+# Shipping Platform - Docker Compose
+# Complete development environment
+# ─────────────────────────────────────────
+
+services:
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: shipping-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shipping
+      POSTGRES_PASSWORD: shipping_secret
+      POSTGRES_DB: shipping_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shipping -d shipping_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Redis Cache
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: shipping-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # API Server (NestJS)
+  # ─────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: shipping-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://shipping:shipping_secret@postgres:5432/shipping_platform
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=your-super-secret-access-key-change-in-production
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+      - JWT_ACCESS_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:3002,http://localhost:3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - production
+
+  # ─────────────────────────────────────────
+  # Admin Dashboard (Next.js)
+  # ─────────────────────────────────────────
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: shipping-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
+    depends_on:
+      - api
+    profiles:
+      - production
+
+  # ─────────────────────────────────────────
+  # Merchant Dashboard (Next.js)
+  # ─────────────────────────────────────────
+  merchant:
+    build:
+      context: ./apps/merchant
+      dockerfile: Dockerfile
+    container_name: shipping-merchant
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
+    depends_on:
+      - api
+    profiles:
+      - production
+
+  # ─────────────────────────────────────────
+  # Courier PWA (Next.js)
+  # ─────────────────────────────────────────
+  courier:
+    build:
+      context: ./apps/courier
+      dockerfile: Dockerfile
+    container_name: shipping-courier
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
+    depends_on:
+      - api
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:
