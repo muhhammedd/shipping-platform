@@ -337,6 +337,7 @@ export function useCancelShipment() {
 export function useCODRecords(filters: CODRecordFilters = {}) {
   const params = new URLSearchParams();
   if (filters.merchantId) params.append('merchantId', filters.merchantId);
+  if (filters.courierId) params.append('courierId', filters.courierId);
   if (filters.status) params.append('status', filters.status);
   params.append('page', String(filters.page || 1));
   params.append('limit', String(filters.limit || 50));

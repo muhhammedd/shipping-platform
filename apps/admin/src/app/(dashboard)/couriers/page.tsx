@@ -26,6 +26,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +45,8 @@ import {
 } from '@/components/ui/select';
 import { USER_STATUS_LABELS } from '@/lib/constants';
 import { UserStatus, UserRole } from '@/types';
-import { Truck, Plus, Loader2, UserCheck, UserX } from 'lucide-react';
+import { Truck, Plus, Loader2, UserCheck, UserX, Eye } from 'lucide-react';
+import Link from 'next/link';
 
 export default function CouriersPage() {
   const [page, setPage] = useState(1);
@@ -160,32 +172,62 @@ export default function CouriersPage() {
               ) : (
                 couriers.map((courier) => (
                   <TableRow key={courier.id}>
-                    <TableCell className="font-medium">{courier.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/couriers/${courier.id}`} className="hover:underline text-blue-600">
+                        {courier.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="font-mono" dir="ltr">{courier.email}</TableCell>
                     <TableCell dir="ltr">{courier.phone || '-'}</TableCell>
                     <TableCell>{courier.branch?.name || '-'}</TableCell>
                     <TableCell>{getStatusBadge(courier.status as UserStatus)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {courier.status === 'ACTIVE' ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleStatusChange(courier.id, 'SUSPENDED')}
-                          >
-                            <UserX className="w-4 h-4" />
+                        <Link href={`/couriers/${courier.id}`}>
+                          <Button size="sm" variant="ghost">
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-green-600 hover:text-green-600"
-                            onClick={() => handleStatusChange(courier.id, 'ACTIVE')}
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </Button>
-                        )}
+                        </Link>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            {courier.status === 'ACTIVE' ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <UserX className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-green-600 hover:text-green-600"
+                              >
+                                <UserCheck className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {courier.status === 'ACTIVE'
+                                  ? `سيتم تعليق حساب المندوب ${courier.name}. لن يتمكن من تسجيل الدخول أو استلام مهام جديدة.`
+                                  : `سيتم تفعيل حساب المندوب ${courier.name}.`}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(courier.id, courier.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
+                                className={courier.status === 'ACTIVE' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-green-600 text-white hover:bg-green-700'}
+                              >
+                                {courier.status === 'ACTIVE' ? 'تعليق' : 'تفعيل'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { useDebounce } from '@/hooks/use-debounce';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,20 +47,25 @@ export default function NewShipmentPage() {
 
   const watchedCity = watch('city');
   const watchedWeight = watch('weight');
+  const debouncedCity = useDebounce(watchedCity, 400);
+  const debouncedWeight = useDebounce(watchedWeight, 400);
 
-  const handleCalculatePrice = async () => {
-    if (!watchedCity || !watchedWeight || !user?.id) return;
-    try {
-      const result = await calculatePriceMutation.mutateAsync({
-        merchantId: user.id,
-        city: watchedCity,
-        weight: watchedWeight,
-      });
-      if (result?.price) setCalculatedPrice(result.price);
-    } catch {
-      // API may not have pricing rules — silent fail
-    }
-  };
+  useEffect(() => {
+    const handleCalculatePrice = async () => {
+      if (!debouncedCity || !debouncedWeight || !user?.id) return;
+      try {
+        const result = await calculatePriceMutation.mutateAsync({
+          merchantId: user.id,
+          city: debouncedCity,
+          weight: debouncedWeight,
+        });
+        if (result?.price) setCalculatedPrice(result.price);
+      } catch {
+        // API may not have pricing rules — silent fail
+      }
+    };
+    handleCalculatePrice();
+  }, [debouncedCity, debouncedWeight, user?.id, calculatePriceMutation.mutateAsync]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -130,7 +136,6 @@ export default function NewShipmentPage() {
               <Select
                 onValueChange={(value) => {
                   setValue('city', value);
-                  if (watchedWeight) handleCalculatePrice();
                 }}
               >
                 <SelectTrigger>
@@ -176,10 +181,6 @@ export default function NewShipmentPage() {
                   min="0.1"
                   max="50"
                   {...register('weight', { valueAsNumber: true })}
-                  onChange={(e) => {
-                    setValue('weight', parseFloat(e.target.value) || 0);
-                    if (watchedCity) setTimeout(handleCalculatePrice, 100);
-                  }}
                 />
                 {errors.weight && <p className="text-sm text-destructive">{errors.weight.message}</p>}
               </div>
@@ -203,7 +204,7 @@ export default function NewShipmentPage() {
         </Card>
 
         {/* Price Preview */}
-        {calculatedPrice !== null && (
+        {(calculatePriceMutation.isPending || calculatedPrice !== null) && (
           <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -211,7 +212,14 @@ export default function NewShipmentPage() {
                   <Calculator className="h-5 w-5 text-emerald-600" />
                   <span className="font-medium">السعر المتوقع</span>
                 </div>
-                <span className="text-2xl font-bold text-emerald-600">{calculatedPrice} ج.م</span>
+                {calculatePriceMutation.isPending ? (
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">جاري الحساب...</span>
+                  </div>
+                ) : (
+                  <span className="text-2xl font-bold text-emerald-600">{calculatedPrice} ج.م</span>
+                )}
               </div>
             </CardContent>
           </Card>

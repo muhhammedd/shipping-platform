@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useShipments, useCancelShipment } from '@/hooks/queries';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,7 @@ export default function ShipmentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [cityFilter, setCityFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
@@ -66,7 +68,13 @@ export default function ShipmentsPage() {
     limit: 20,
     status: statusFilter as ShipmentStatus || undefined,
     city: cityFilter || undefined,
+    trackingNumber: debouncedSearch || undefined,
   });
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const cancelMutation = useCancelShipment();
 

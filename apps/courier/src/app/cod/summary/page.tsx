@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth.store';
 export default function CODSummaryPage() {
   const { user } = useAuthStore();
   const { data: recordsData, isLoading: recordsLoading, isError, refetch } = useCODRecords({
+    courierId: user?.id,
     page: 1,
     limit: 100,
   });

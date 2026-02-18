@@ -290,6 +290,7 @@ export interface ShipmentFilters {
   courierId?: string;
   branchId?: string;
   city?: string;
+  trackingNumber?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;

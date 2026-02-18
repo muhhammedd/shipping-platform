@@ -230,6 +230,7 @@ export function useShipments(filters: ShipmentFilters = {}) {
   if (filters.courierId) params.append('courierId', filters.courierId);
   if (filters.branchId) params.append('branchId', filters.branchId);
   if (filters.city) params.append('city', filters.city);
+  if (filters.trackingNumber) params.append('trackingNumber', filters.trackingNumber);
   if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.append('dateTo', filters.dateTo);
   params.append('page', String(filters.page || 1));
