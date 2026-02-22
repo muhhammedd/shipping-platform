@@ -26,6 +26,22 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────
+  # pgAdmin 4 - Database Management
+  # ─────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: shipping-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@shipping.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────
   # Redis Cache
   # ─────────────────────────────────────────
   redis:
@@ -47,8 +63,8 @@ services:
   # ─────────────────────────────────────────
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: shipping-api
     restart: unless-stopped
     ports:
@@ -68,16 +84,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    profiles:
-      - production
 
   # ─────────────────────────────────────────
   # Admin Dashboard (Next.js)
   # ─────────────────────────────────────────
   admin:
     build:
-      context: ./apps/admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/admin/Dockerfile
     container_name: shipping-admin
     restart: unless-stopped
     ports:
@@ -87,16 +101,14 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
     depends_on:
       - api
-    profiles:
-      - production
 
   # ─────────────────────────────────────────
   # Merchant Dashboard (Next.js)
   # ─────────────────────────────────────────
   merchant:
     build:
-      context: ./apps/merchant
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/merchant/Dockerfile
     container_name: shipping-merchant
     restart: unless-stopped
     ports:
@@ -106,16 +118,14 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
     depends_on:
       - api
-    profiles:
-      - production
 
   # ─────────────────────────────────────────
   # Courier PWA (Next.js)
   # ─────────────────────────────────────────
   courier:
     build:
-      context: ./apps/courier
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/courier/Dockerfile
     container_name: shipping-courier
     restart: unless-stopped
     ports:
@@ -125,8 +135,6 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/v1
     depends_on:
       - api
-    profiles:
-      - production
 
 volumes:
   postgres_data:
